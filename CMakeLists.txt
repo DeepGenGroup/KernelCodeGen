@@ -13,11 +13,10 @@ cmake_minimum_required(VERSION 3.15.0)
 project(KernelCodeGen LANGUAGES CXX C)    # delete CUDA
 
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
-
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 
 message(STATUS "LLVM_BUILD_LIBRARY_DIR ${LLVM_BUILD_LIBRARY_DIR}")
-set(LLVM_BUILD_LIBRARY_DIR /home/xiebaokang/projects/mlir/llvm-project/build/lib)
+set(LLVM_BUILD_LIBRARY_DIR "/home/xushilong/rocm-llvm-project/build/lib")
 message(STATUS "LLVM_BUILD_LIBRARY_DIR ${LLVM_BUILD_LIBRARY_DIR}")
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
@@ -56,6 +55,11 @@ include_directories(${KernelCodeGen_SOURCE_DIR}/build/include)
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
+add_compile_options(
+  -w
+  # -Wno-unused-but-set-variable
+  # -Wno-unused-variable
+)
 
 
 # optional config

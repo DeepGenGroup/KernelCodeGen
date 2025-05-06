@@ -62,10 +62,10 @@ public:
   void initMLIRContext() {
     // context.getOrLoadDialect<mlir::compute_dag::ComputeDAGDialect>();
     // context.getOrLoadDialect<mlir::schedule::ScheduleDialect>();
-    context.getOrLoadDialect<mlir::AffineDialect>();
+    context.getOrLoadDialect<mlir::affine::AffineDialect>();
     context.getOrLoadDialect<mlir::memref::MemRefDialect>();
     context.getOrLoadDialect<mlir::func::FuncDialect>();
-    context.getOrLoadDialect<mlir::arith::ArithmeticDialect>();
+    context.getOrLoadDialect<mlir::arith::ArithDialect>();
     context.getOrLoadDialect<mlir::gpu::GPUDialect>();
     context.getOrLoadDialect<mlir::vector::VectorDialect>();
     context.getOrLoadDialect<mlir::scf::SCFDialect>();
@@ -75,7 +75,7 @@ public:
 
   ComputeDAG& createGraph(const std::string& graphName) {
     minLatency = FLT_MAX;
-    graph.module = mlir::ModuleOp::create(builder.getUnknownLoc(), mlir::Optional<mlir::StringRef>(std::move(graphName)));
+    graph.module = mlir::ModuleOp::create(builder.getUnknownLoc(), std::optional<llvm::StringRef>(std::move(graphName)));
     graph.builder.setInsertionPointToEnd(graph.module.getBody());
     return graph;
   }
