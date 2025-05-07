@@ -57,6 +57,7 @@ add_definitions(${LLVM_DEFINITIONS})
 
 add_compile_options(
   -w
+  -g
   # -Wno-unused-but-set-variable
   # -Wno-unused-variable
 )

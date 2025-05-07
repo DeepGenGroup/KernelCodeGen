@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include "KernelCodeGen.h"
+#include "mlir/InitAllDialects.h"
 using namespace KernelCodeGen;
 
 
@@ -48,61 +49,91 @@ void test_operators() {
   auto&& sourceCode = generator.codegen(module);
 }
 
-// void test_matmul() {
+void test_matmul() {
 
-//   /* 1. Demo */
-//   KernelCodeGenerator generator("CUDA");
+  /* 1. Demo */
+  KernelCodeGenerator generator("CUDA");
   
-//   auto graph = generator.createGraph("matmul_demo");
-//   generator.setLogMode(Log::Debug);
+  auto graph = generator.createGraph("matmul_demo");
+  generator.setLogMode(Log::Debug);
 
-//   int m = 4096, n = 2048, k = 1024;
-//   auto A = graph.create<PlaceHolder>(std::vector<int64_t>{m, k}, std::string{"float32"});
-//   auto B = graph.create<PlaceHolder>(std::vector<int64_t>{k, n}, std::string{"float32"});
-//   auto C = graph.create<Matmul>(A, B);
-//   auto D = graph.create<Relu>(C, MemorySpace::inplace);
+  int m = 4096, n = 2048, k = 1024;
+  auto A = graph.create<PlaceHolder>(std::vector<int64_t>{m, k}, std::string{"float32"});
+  auto B = graph.create<PlaceHolder>(std::vector<int64_t>{k, n}, std::string{"float32"});
+  auto C = graph.create<Matmul>(A, B);
+  // auto D = graph.create<Relu>(C, MemorySpace::inplace);
 
-//   graph.dump();
-//   auto module = generator.optimize(graph);
-//   generator.dump(module);
-//   auto&& sourceCode = generator.codegen(module);
-//   generator.save(sourceCode, "../test/matmul/matmulKernel.cu");
-//   std::string adaptorCode = "";
-//   adaptorCode += "#include \"matmulKernel.cu\"\n";
-//   adaptorCode += "const int M = " + std::to_string(m) + ";\n";
-//   adaptorCode += "const int N = " + std::to_string(n) + ";\n";
-//   adaptorCode += "const int K = " + std::to_string(k) + ";\n";
-//   adaptorCode += "#define kernelFunc matmul_demo::kernel0\n";
-//   generator.save(adaptorCode, "../test/matmul/adaptor.cu");
-//   system("cd ../build && make matmul && ../bin/matmul");
+  LOG_DEBUG("========= graph =======");
+  graph.dump();
+  auto module = generator.optimize(graph);
+  LOG_DEBUG("========= after optimize =======");
+  generator.dump(module);
+  auto&& sourceCode = generator.codegen(module);
+  generator.save(sourceCode, "/home/xushilong/KernelCodeGen/test/matmulKernel.cu");
+  std::string adaptorCode = "";
+  adaptorCode += "#include \"matmulKernel.cu\"\n";
+  adaptorCode += "const int M = " + std::to_string(m) + ";\n";
+  adaptorCode += "const int N = " + std::to_string(n) + ";\n";
+  adaptorCode += "const int K = " + std::to_string(k) + ";\n";
+  adaptorCode += "#define kernelFunc matmul_demo::kernel0\n";
+  generator.save(adaptorCode, "/home/xushilong/KernelCodeGen/test/matmuladaptor.cu");
+  system("cd /home/xushilong/KernelCodeGen/build && make matmul && ../bin/matmul");
 
-//   /* 2. Batch perf test.*/
-//   std::vector<int64_t> dims {256, 512, 768, 1024, 1536, 2048, 3072, 4096, 5120, 6144, 7168, 8192, 9216, 10240, 11264, 12288, 13312, 14336, 15360, 16384};
-//   for (auto dim : dims) {
-//     auto fileName = "Matmul_M" + std::to_string(dim) + "_N" + std::to_string(dim) + "_K" + std::to_string(dim);
-//     auto graph = generator.createGraph(fileName);
-//     generator.setLogMode(Log::Release);
+  /* 2. Batch perf test.*/
+  #if 0
+  std::vector<int64_t> dims {256, 512, 768, 1024, 1536, 2048, 3072, 4096, 5120, 6144, 7168, 8192, 9216, 10240, 11264, 12288, 13312, 14336, 15360, 16384};
+  for (auto dim : dims) {
+    auto fileName = "Matmul_M" + std::to_string(dim) + "_N" + std::to_string(dim) + "_K" + std::to_string(dim);
+    auto graph = generator.createGraph(fileName);
+    generator.setLogMode(Log::Release);
 
-//     int m = dim, n = dim, k = dim;
-//     auto A = graph.create<PlaceHolder>(std::vector<int64_t>{m, k}, std::string{"float32"});
-//     auto B = graph.create<PlaceHolder>(std::vector<int64_t>{k, n}, std::string{"float32"});
-//     auto C = graph.create<Matmul>(A, B, MemorySpace::global);
+    int m = dim, n = dim, k = dim;
+    auto A = graph.create<PlaceHolder>(std::vector<int64_t>{m, k}, std::string{"float32"});
+    auto B = graph.create<PlaceHolder>(std::vector<int64_t>{k, n}, std::string{"float32"});
+    auto C = graph.create<Matmul>(A, B, std::string{"float32"});
 
-//     auto module = generator.optimize(graph);
-//     auto&& sourceCode = generator.codegen(module);
-//     auto srcFile = "../test/matmul/" + fileName + ".cu";
-//     generator.save(sourceCode, srcFile);
+    auto module = generator.optimize(graph);
+    auto&& sourceCode = generator.codegen(module);
+    auto srcFile = "../test/matmul/" + fileName + ".cu";
+    generator.save(sourceCode, srcFile);
 
-//     std::string adaptorCode = "";
-//     adaptorCode += "#include \"" + fileName + ".cu\"\n";
-//     adaptorCode += "const int M = " + std::to_string(m) + ";\n";
-//     adaptorCode += "const int N = " + std::to_string(n) + ";\n";
-//     adaptorCode += "const int K = " + std::to_string(k) + ";\n";
-//     adaptorCode += "#define kernelFunc " + fileName + "::kernel0\n";
-//     generator.save(adaptorCode, "../test/matmul/adaptor.cu");
-//     system("cd ../build && make matmul && ../bin/matmul");
-//   }
-// }
+    std::string adaptorCode = "";
+    adaptorCode += "#include \"" + fileName + ".cu\"\n";
+    adaptorCode += "const int M = " + std::to_string(m) + ";\n";
+    adaptorCode += "const int N = " + std::to_string(n) + ";\n";
+    adaptorCode += "const int K = " + std::to_string(k) + ";\n";
+    adaptorCode += "#define kernelFunc " + fileName + "::kernel0\n";
+    generator.save(adaptorCode, "../test/matmul/adaptor.cu");
+    system("cd ../build && make matmul && ../bin/matmul");
+  }
+  #endif
+}
+void parse_mlir_emit_C_code(const std::string& filename, const std::string& outdir ) {
+  using namespace mlir;
+  KernelCodeGenerator generator("CUDA");
+  mlir::MLIRContext testContext;
+  testContext.loadDialect<
+    mlir::affine::AffineDialect,
+    func::FuncDialect,
+    memref::MemRefDialect,
+    scf::SCFDialect,
+    gpu::GPUDialect, 
+    NVVM::NVVMDialect, 
+    arith::ArithDialect, cf::ControlFlowDialect, LLVM::LLVMDialect, ROCDL::ROCDLDialect,
+    mlir::math::MathDialect
+  >();
+  auto temp = mlir::parseSourceFile<ModuleOp>(filename,&testContext);
+  auto module = temp.operator->();
+  generator.dump(*module);
+  auto&& sourceCode = generator.codegen(*module);
+  generator.save(sourceCode, outdir + "/kernel_c_code.cu");
+  std::string adaptorCode = "";
+  adaptorCode += "#include \"kernel_c_code.cu\"\n";
+  adaptorCode += "#define kernelFunc matmul_demo::kernel0\n";
+  generator.save(adaptorCode, outdir + "/adaptor.cu");
+  return;
+
+}
 
 void test_flash_attention() {
   /* 1. Demo */
@@ -148,9 +179,16 @@ void test_flash_attention() {
 
 
 int main(int argc, char* argv[]) {
-
-  // test_matmul();
-  test_operators();
+#if 0
+  test_matmul();
+  // test_operators();
   // test_flash_attention();
-
+#else
+  if(argc != 3){
+    std::cout << "Usage : $input.mlir $outdir" << std::endl;
+    return 1;
+  }
+  parse_mlir_emit_C_code(argv[1], argv[2]);
+#endif
+  return 0;
 }
